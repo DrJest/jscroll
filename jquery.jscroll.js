@@ -29,6 +29,7 @@
             nextSelector: 'a:last',
             contentSelector: '',
             pagingSelector: '',
+            dataType: 'html',
             callback: false
         }
     };
@@ -154,6 +155,27 @@
                 $inner.append('<div class="jscroll-added" />')
                     .children('.jscroll-added').last()
                     .html('<div class="jscroll-loading">' + _options.loadingHtml + '</div>');
+
+                if(_options.dataType=="json" && _options.callback && typeof _options.callback == 'function') {
+                    return $e.animate({scrollTop: $inner.outerHeight()}, 0, function() {
+                        var added = $inner.find('div.jscroll-added').last();
+                        $.get(data.nextHref, function(r, status) {
+                            if (status === 'error') {
+                                return _destroy();
+                            }
+                            var $next = $(this).find(_options.nextSelector).first();
+                            data.waiting = false;
+                            data.nextHref = r.nextUrl ? $.trim(r.nextUrl + ' ' + _options.contentSelector) : false;
+                            var n = $('.jscroll-next-parent').children().clone().attr("href", data.nextHref);
+                            $('.jscroll-next-parent', $e).remove();
+                            $('.jscroll-loading').remove();
+                            data.nextHref && added.append(n);
+                            _checkNextHref();
+                            _options.callback.apply(added[0], [r.results, n]);
+                            _debug('dir', data);
+                        })
+                    });
+                }
 
                 return $e.animate({scrollTop: $inner.outerHeight()}, 0, function() {
                     $inner.find('div.jscroll-added').last().load(data.nextHref, function(r, status) {
